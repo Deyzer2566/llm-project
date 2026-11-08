@@ -61,6 +61,8 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
         try:
             response = llm.chat(messages, json_schema=EXTRACTION_SCHEMA)
             data = json.loads(response.content)
+            if not isinstance(data, dict):
+                raise ValueError("JSON is not a dictionary")
             break
         except Exception:
             if attempt == 1:

@@ -24,15 +24,16 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
     codes = find_codes(question)
     
     for c in codes:
-        if c not in kb.graph.nodes:
-            if code_type(c) in ("Model", "Part", "ErrorCode", "Procedure"):
-                return Answer(text="в базе знаний не найдено", sources=[], refused=True)
+        ctype = code_type(c)
+        node_id = f"{ctype}:{c}"
+        if node_id not in kb.graph.nodes:
+            return Answer(text="в базе знаний не найдено", sources=[], refused=True)
 
-    anchor_codes = [c for c in codes if c in kb.graph.nodes]
+    anchor_codes = [c for c in codes if f"{code_type(c)}:{c}" in kb.graph.nodes]
     anchor_names = find_names(question, vocab)
     anchor_nodes = set()
     for c in anchor_codes:
-        anchor_nodes.add(c)
+        anchor_nodes.add(f"{code_type(c)}:{c}")
     for etype, ename in anchor_names:
         node_id = f"{etype}:{ename}"
         if node_id in kb.graph.nodes:

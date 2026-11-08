@@ -54,6 +54,13 @@ def run_agent(
             
             step = ToolStep(tool=tool_name, args=args)
             
+            if "_raw" in args:
+                step.error = "Нечитаемые аргументы инструмента."
+                steps.append(step)
+                messages.append(response.as_message())
+                messages.append(tool_message(call, {"error": step.error}))
+                continue
+            
             if "part_id" in args:
                 if str(args["part_id"]) not in known_parts:
                     step.error = f"Неизвестная деталь {args['part_id']}. Сначала используйте search_knowledge, чтобы найти нужную деталь."
@@ -61,6 +68,25 @@ def run_agent(
                     messages.append(response.as_message())
                     messages.append(tool_message(call, {"error": step.error}))
                     continue
+            
+            if tool_name == "create_service_order":
+                if "qty" in args and qty_in_question is None:
+                    step.error = "Количество не указано в вопросе. Уточните у пользователя, сколько штук заказать."
+                    steps.append(step)
+                    messages.append(response.as_message())
+                    messages.append(tool_message(call, {"error": step.error}))
+                    continue
+
+            if tool_name == "create_service_order" and not confirm:
+                steps.append(step)
+                return AgentResult(
+                    answer="Заказ готов к оформлению. Требуется подтверждение.",
+                    steps=steps,
+                    sources=sorted(list(sources)),
+                    refused=False,
+                    needs_confirmation=True,
+                    pending_action={"tool": "create_service_order", "args": args},
+                )
             
             if tool_name == "create_service_order":
                 if "qty" in args and qty_in_question is None:
@@ -108,27 +134,17 @@ def run_agent(
             
             if step.result is not None:
                 messages.append(tool_message(call, step.result))
-                tool_results_text += json.dumps(step.result, ensure_ascii=False) + " "
-                if "part_id" in step.result:
-                    known_parts.add(str(step.result["part_id"]))
+                result_text = json.dumps(step.result, ensure_ascii=False)
+                tool_results_text += result_text + " "
+                for code in find_codes(result_text):
+                    known_parts.add(code)
                 if "sources" in step.result and isinstance(step.result["sources"], list):
                     for src in step.result["sources"]:
                         sources.add(src)
             else:
                 messages.append(tool_message(call, {"error": step.error}))
 
-            if tool_name == "create_service_order" and step.error is None:
-                if not confirm:
-                    return AgentResult(
-                        answer="Заказ готов к оформлению. Требуется подтверждение.",
-                        steps=steps,
-                        sources=sorted(list(sources)),
-                        refused=False,
-                        needs_confirmation=True,
-                        pending_action={"tool": "create_service_order", "args": args},
-                    )
-
-    final_answer = response.content.strip() if response.content else ""
+    final_answer = response.content.strip() if response.content else "Работа прервана: исчерпан лимит шагов."
     
     def verify_answer(ans: str) -> tuple[bool, str]:
         known_codes = set(find_codes(question) + find_codes(tool_results_text))
@@ -154,9 +170,11 @@ def run_agent(
                 refused=True,
             )
 
+    is_refused = any(step.result and isinstance(step.result, dict) and step.result.get("refused") for step in steps) or "не найдено" in final_answer.lower()
+
     return AgentResult(
         answer=final_answer,
         steps=steps,
         sources=sorted(list(sources)),
-        refused=False,
+        refused=is_refused,
     )
