@@ -3,10 +3,10 @@
 import re
 from collections.abc import Callable
 
+from assistant.graphrag.search import global_search, local_search
 from assistant.infra.erp_client import ErpClient, ErpNotFound, ErpRejected, ErpUnavailable
 from assistant.infra.llm import LLMClient
 from assistant.infra.schemas import KnowledgeBase
-from assistant.graphrag.search import local_search, global_search
 
 WAREHOUSES = ["Москва", "Санкт-Петербург", "Казань", "Новосибирск"]
 

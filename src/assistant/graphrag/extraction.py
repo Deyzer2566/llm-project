@@ -64,7 +64,9 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
 4. Ответ верни одним JSON-объектом с полями "entities" и "relations".
 
 Пример:
-Текст: "Деталь P-1042 (пусковое реле) снята с производства. Вместо неё устанавливается деталь P-1042B. Поставщик – «ХолодКомплект»."
+Текст: "Деталь P-1042 (пусковое реле) снята с производства.
+Вместо неё устанавливается деталь P-1042B.
+Поставщик - «ХолодКомплект»."
 Результат:
 {{
   "entities": [
@@ -75,8 +77,20 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
   ],
   "relations": [
     {{"subject_type": "Part", "subject": "P-1042", "type": "REPLACED_BY", "object_type": "Part", "object": "P-1042B"}},
-    {{"subject_type": "Part", "subject": "P-1042", "type": "IS_A", "object_type": "Component", "object": "пусковое реле"}},
-    {{"subject_type": "Part", "subject": "P-1042B", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ХолодКомплект"}}
+    {{
+        "subject_type": "Part",
+        "subject": "P-1042",
+        "type": "IS_A",
+        "object_type": "Component",
+        "object": "пусковое реле"
+    }},
+    {{
+        "subject_type": "Part",
+        "subject": "P-1042B",
+        "type": "SUPPLIED_BY",
+        "object_type": "Supplier",
+        "object": "ХолодКомплект"
+    }}
   ]
 }}
 

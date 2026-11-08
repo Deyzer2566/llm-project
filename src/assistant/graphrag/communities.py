@@ -63,7 +63,8 @@ def summarize_community(community: Community, graph: nx.DiGraph, llm: LLMClient)
 Самый упоминаемый узел типа Component: {top_component}.
 Самый упоминаемый узел типа Supplier: {top_supplier}.
 
-Опиши, какие сущности входят в это сообщество, как они связаны и что встречается чаще всего, используя предоставленные числа.
+Опиши, какие сущности входят в это сообщество, как они связаны и что встречается чаще всего,
+используя предоставленные числа.
 """
     response = llm.chat([{"role": "user", "content": prompt}], max_tokens=300)
     summary = response.content.strip()

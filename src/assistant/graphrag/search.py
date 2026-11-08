@@ -1,10 +1,11 @@
 """Два режима поиска по графу. Требования FR-4, FR-5 и FR-10."""
 
 import networkx as nx
-from assistant.infra.llm import LLMClient
-from assistant.infra.schemas import Answer, KnowledgeBase, MAP_SCHEMA
-from assistant.infra.grounding import find_codes, find_names, canonical_name, code_type
+
 from assistant.infra.config import vocabulary
+from assistant.infra.grounding import code_type, find_codes, find_names
+from assistant.infra.llm import LLMClient
+from assistant.infra.schemas import MAP_SCHEMA, Answer, KnowledgeBase
 
 
 def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:

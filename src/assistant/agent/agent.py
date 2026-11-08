@@ -1,15 +1,15 @@
 """Цикл агента. Требования FR-7, FR-8, FR-9 и FR-10."""
 
-import re
 import json
+import re
 from collections.abc import Callable
 
+from assistant.agent.tools import TOOL_SCHEMAS
+from assistant.infra.erp_client import ErpUnavailable
+from assistant.infra.evaluation import fabricated_facts
+from assistant.infra.grounding import find_codes
 from assistant.infra.llm import LLMClient, tool_message
 from assistant.infra.schemas import AgentResult, ToolStep
-from assistant.infra.erp_client import ErpUnavailable
-from assistant.infra.grounding import find_codes
-from assistant.infra.evaluation import fabricated_facts
-from assistant.agent.tools import TOOL_SCHEMAS
 
 
 def run_agent(
@@ -42,7 +42,7 @@ def run_agent(
     qty_match = re.search(r"(\d+)\s*(?:штук|штуки|шт)", question, re.IGNORECASE)
     qty_in_question = qty_match.group(1) if qty_match else None
 
-    for step_num in range(max_steps):
+    for _step_num in range(max_steps):
         response = llm.chat(messages, tools=TOOL_SCHEMAS)
         
         if not response.tool_calls:
@@ -63,7 +63,8 @@ def run_agent(
             
             if "part_id" in args:
                 if str(args["part_id"]) not in known_parts:
-                    step.error = f"Неизвестная деталь {args['part_id']}. Сначала используйте search_knowledge, чтобы найти нужную деталь."
+                    step.error = f"""Неизвестная деталь {args['part_id']}.
+Сначала используйте search_knowledge, чтобы найти нужную деталь."""
                     steps.append(step)
                     messages.append(response.as_message())
                     messages.append(tool_message(call, {"error": step.error}))
@@ -155,7 +156,8 @@ def run_agent(
 
     is_valid, error_msg = verify_answer(final_answer)
     if not is_valid and final_answer:
-        correction_prompt = f"Твой ответ содержит непроверенные факты: {error_msg}. Исправь ответ, используя только данные из вопроса и результатов инструментов."
+        correction_prompt = f"""Твой ответ содержит непроверенные факты: {error_msg}.
+Исправь ответ, используя только данные из вопроса и результатов инструментов."""
         messages.append({"role": "assistant", "content": final_answer})
         messages.append({"role": "user", "content": correction_prompt})
         correction_response = llm.chat(messages)
@@ -170,7 +172,8 @@ def run_agent(
                 refused=True,
             )
 
-    is_refused = any(step.result and isinstance(step.result, dict) and step.result.get("refused") for step in steps) or "не найдено" in final_answer.lower()
+    is_refused = any(step.result and isinstance(step.result, dict) and step.result.get("refused") for step in steps) \
+        or "не найдено" in final_answer.lower()
 
     return AgentResult(
         answer=final_answer,
