@@ -47,6 +47,15 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
     sources = set()
     undirected = kb.graph.to_undirected()
     
+    def _node_name(node_id: str) -> str:
+        # return kb.graph.nodes[node_id].get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
+        node_data = kb.graph.nodes.get(node_id, {})
+        name = node_data.get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
+        node_type = node_data.get("type", "")
+        # ErrorCode читаем как "Error", остальные типы — как есть
+        type_label = "Error" if node_type == "ErrorCode" else node_type
+        return f"{type_label} {name}" if type_label else name
+
     if len(anchor_nodes) >= 2:
         anchors_list = list(anchor_nodes)
         path_edges = set()
@@ -65,29 +74,29 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
         
         parts_on_path = set()
         for u, v in path_edges:
-            if kb.graph.nodes[u]["type"] == "Part":
+            if kb.graph.nodes[u].get("type") == "Part":
                 parts_on_path.add(u)
-            if kb.graph.nodes[v]["type"] == "Part":
+            if kb.graph.nodes[v].get("type") == "Part":
                 parts_on_path.add(v)
                 
         for p in parts_on_path:
             for neighbor in kb.graph.successors(p):
-                if kb.graph.edges[p, neighbor]["type"] == "REPLACED_BY":
+                if kb.graph.edges[p, neighbor].get("type") == "REPLACED_BY":
                     path_edges.add((p, neighbor))
             for neighbor in kb.graph.predecessors(p):
-                if kb.graph.edges[neighbor, p]["type"] == "REPLACED_BY":
+                if kb.graph.edges[neighbor, p].get("type") == "REPLACED_BY":
                     path_edges.add((neighbor, p))
                     
         for u, v in path_edges:
             if kb.graph.has_edge(u, v):
                 data = kb.graph.edges[u, v]
-                facts.append(f"{kb.graph.nodes[u]['name']} -{data['type']}-> {kb.graph.nodes[v]['name']}")
-                for src in data["sources"]:
+                facts.append(f"{_node_name(u)} -{data.get('type', '')}-> {_node_name(v)}")
+                for src in data.get("sources", []):
                     sources.add(src.split("#")[0])
     else:
         anchor = list(anchor_nodes)[0]
         edges_in_neighborhood = set()
-        for edge in nx.bfs_edges(undirected, anchor, depth_limit=2):
+        for edge in nx.bfs_edges(undirected, anchor):
             edges_in_neighborhood.add(edge)
             edges_in_neighborhood.add((edge[1], edge[0]))
             
@@ -98,8 +107,8 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
         for u, v in edges_in_neighborhood:
             if kb.graph.has_edge(u, v):
                 data = kb.graph.edges[u, v]
-                facts.append(f"{kb.graph.nodes[u]['name']} -{data['type']}-> {kb.graph.nodes[v]['name']}")
-                for src in data["sources"]:
+                facts.append(f"{_node_name(u)} -{data.get('type', '')}-> {_node_name(v)}")
+                for src in data.get("sources", []):
                     sources.add(src.split("#")[0])
 
     if not facts:

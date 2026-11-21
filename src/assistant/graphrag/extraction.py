@@ -3,7 +3,7 @@
 import json
 
 from assistant.infra.config import vocabulary
-from assistant.infra.grounding import canonical_name, find_codes
+from assistant.infra.grounding import canonical_name, find_codes, normalize_code
 from assistant.infra.llm import LLMClient
 from assistant.infra.schemas import (
     ENTITY_TYPES,
@@ -149,7 +149,7 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     for attempt in range(2):
         raw = ""
         try:
-            response = llm.chat(messages, json_schema=EXTRACTION_SCHEMA)
+            response = llm.chat(messages, json_schema=EXTRACTION_SCHEMA, max_tokens=2048)
             raw = response.content or ""
             parsed = json.loads(raw)
             if not _is_valid_payload(parsed):
@@ -195,8 +195,15 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
         scanon = canonical_name(stype, rel["subject"], vocab)
         ocanon = canonical_name(otype, rel["object"], vocab)
 
-        s_valid = scanon is not None and (stype not in CODE_TYPES or scanon in chunk_codes)
-        o_valid = ocanon is not None and (otype not in CODE_TYPES or ocanon in chunk_codes)
+        # Для кодовых типов проверяем, что нормализованный код из ответа модели
+        # совпадает с каким-либо нормализованным кодом из текста чанка
+        s_valid = scanon is not None
+        if s_valid and stype in CODE_TYPES:
+            s_valid = any(normalize_code(c) == scanon for c in find_codes(chunk.text))
+        
+        o_valid = ocanon is not None
+        if o_valid and otype in CODE_TYPES:
+            o_valid = any(normalize_code(c) == ocanon for c in find_codes(chunk.text))
 
         if not (s_valid and o_valid):
             dropped += 1

@@ -24,6 +24,8 @@ def build_graph(results: list[ExtractionResult]) -> nx.DiGraph:
             node_id = ent.node_id
             if node_id not in graph:
                 graph.add_node(node_id, type=ent.type, name=ent.name, sources=[])
+            if "sources" not in graph.nodes[node_id]:
+                graph.nodes[node_id]["sources"] = []
             if res.chunk_id not in graph.nodes[node_id]["sources"]:
                 graph.nodes[node_id]["sources"].append(res.chunk_id)
                 
@@ -34,6 +36,8 @@ def build_graph(results: list[ExtractionResult]) -> nx.DiGraph:
             v = rel.object.node_id
             
             if graph.has_edge(u, v):
+                if "sources" not in graph.edges[u, v]:
+                    graph.edges[u, v]["sources"] = []
                 if res.chunk_id not in graph.edges[u, v]["sources"]:
                     graph.edges[u, v]["sources"].append(res.chunk_id)
                     graph.edges[u, v]["weight"] += 1

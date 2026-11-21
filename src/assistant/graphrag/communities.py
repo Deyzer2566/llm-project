@@ -29,44 +29,102 @@ def summarize_community(community: Community, graph: nx.DiGraph, llm: LLMClient)
     """
     # TODO: собрать факты и подсчёты сообщества, попросить модель написать сводку
     # raise NotImplementedError("Реализуйте summarize_community")
-    
-    component_counts = {}
-    supplier_counts = {}
-    max_weight = 0
-    top_relation = ""
-    
     subgraph = graph.subgraph(community.nodes)
+    
+    # Собираем полную статистику по сообществу
+    nodes_by_type = {}
+    for node in community.nodes:
+        node_type = graph.nodes[node].get("type", "Unknown")
+        node_name = graph.nodes[node].get("name", node)
+        if node_type not in nodes_by_type:
+            nodes_by_type[node_type] = []
+        nodes_by_type[node_type].append(node_name)
+    
+    # Считаем веса для каждого типа связи
+    relation_stats = {}
+    component_weights = {}
+    supplier_weights = {}
+    model_failures = {}
+    
     for u, v, data in subgraph.edges(data=True):
-        w = data["weight"]
-        if w > max_weight:
-            max_weight = w
-            top_relation = f"{graph.nodes[u]['name']} {data['type']} {graph.nodes[v]['name']}"
+        rel_type = data.get("type", "UNKNOWN")
+        weight = data.get("weight", 1)
         
-        u_type = graph.nodes[u]["type"]
-        v_type = graph.nodes[v]["type"]
+        if rel_type not in relation_stats:
+            relation_stats[rel_type] = []
+        
+        u_name = graph.nodes[u].get("name", u)
+        v_name = graph.nodes[v].get("name", v)
+        u_type = graph.nodes[u].get("type", "")
+        v_type = graph.nodes[v].get("type", "")
+        
+        relation_stats[rel_type].append({
+            "from": u_name,
+            "to": v_name,
+            "weight": weight
+        })
+        
+        # Считаем веса для компонентов
         if u_type == "Component":
-            component_counts[graph.nodes[u]["name"]] = component_counts.get(graph.nodes[u]["name"], 0) + w
+            component_weights[u_name] = component_weights.get(u_name, 0) + weight
         if v_type == "Component":
-            component_counts[graph.nodes[v]["name"]] = component_counts.get(graph.nodes[v]["name"], 0) + w
-            
+            component_weights[v_name] = component_weights.get(v_name, 0) + weight
+        
+        # Считаем веса для поставщиков
         if u_type == "Supplier":
-            supplier_counts[graph.nodes[u]["name"]] = supplier_counts.get(graph.nodes[u]["name"], 0) + w
+            supplier_weights[u_name] = supplier_weights.get(u_name, 0) + weight
         if v_type == "Supplier":
-            supplier_counts[graph.nodes[v]["name"]] = supplier_counts.get(graph.nodes[v]["name"], 0) + w
-
-    top_component = max(component_counts, key=component_counts.get) if component_counts else "нет"
-    top_supplier = max(supplier_counts, key=supplier_counts.get) if supplier_counts else "нет"
+            supplier_weights[v_name] = supplier_weights.get(v_name, 0) + weight
+        
+        # Считаем отказы моделей
+        if rel_type == "FAILED":
+            model_failures[v_name] = model_failures.get(v_name, 0) + weight
+    
+    # Формируем текст со всеми данными
+    stats_lines = []
+    stats_lines.append(f"В сообществе {len(community.nodes)} узлов и {subgraph.number_of_edges()} связей.")
+    
+    # Узлы по типам
+    for node_type, names in sorted(nodes_by_type.items()):
+        stats_lines.append(f"Узлы типа {node_type}: {', '.join(sorted(names)[:10])}")
+    
+    # Топ компонентов по весу
+    if component_weights:
+        top_components = sorted(component_weights.items(), key=lambda x: x[1], reverse=True)[:5]
+        stats_lines.append("Топ компонентов по суммарному весу связей:")
+        for name, weight in top_components:
+            stats_lines.append(f"  - {name}: {weight}")
+    
+    # Топ поставщиков по весу
+    if supplier_weights:
+        top_suppliers = sorted(supplier_weights.items(), key=lambda x: x[1], reverse=True)[:5]
+        stats_lines.append("Топ поставщиков по суммарному весу связей:")
+        for name, weight in top_suppliers:
+            stats_lines.append(f"  - {name}: {weight}")
+    
+    # Отказы моделей
+    if model_failures:
+        stats_lines.append("Отказы узлов в моделях:")
+        for name, weight in sorted(model_failures.items(), key=lambda x: x[1], reverse=True)[:5]:
+            stats_lines.append(f"  - {name}: {weight}")
+    
+    # Примеры связей каждого типа
+    for rel_type, examples in sorted(relation_stats.items()):
+        top_examples = sorted(examples, key=lambda x: x["weight"], reverse=True)[:3]
+        stats_lines.append(f"Связи типа {rel_type} (топ по весу):")
+        for ex in top_examples:
+            stats_lines.append(f"  - {ex['from']} -> {ex['to']} (вес {ex['weight']})")
+    
+    stats_text = "\n".join(stats_lines)
     
     prompt = f"""Напиши краткую сводку сообщества графа знаний (не более 150 слов).
-В сообществе {len(community.nodes)} узлов.
-Самая частая связь: {top_relation} (вес {max_weight}).
-Самый упоминаемый узел типа Component: {top_component}.
-Самый упоминаемый узел типа Supplier: {top_supplier}.
+Используй только следующие данные:
 
-Опиши, какие сущности входят в это сообщество, как они связаны и что встречается чаще всего,
-используя предоставленные числа.
+{stats_text}
+
+Опиши, какие сущности входят в это сообщество, как они связаны и что встречается чаще всего.
 """
-    response = llm.chat([{"role": "user", "content": prompt}], max_tokens=300)
+    response = llm.chat([{"role": "user", "content": prompt}], max_tokens=2048)
     summary = response.content.strip()
     words = summary.split()
     if len(words) > 150:
