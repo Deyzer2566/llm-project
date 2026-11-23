@@ -75,7 +75,8 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
 4. Ответ верни одним JSON-объектом с полями "entities" и "relations".
 
 Пример 1 (бюллетень о замене детали):
-Текст: "Деталь P-1042 (пусковое реле) снята с производства. Вместо неё устанавливается деталь P-1042B. Поставщик – «ХолодКомплект»."
+Текст: "Деталь P-1042 (пусковое реле) снята с производства. Вместо неё устанавливается деталь P-1042B. """ \
+f"""Поставщик – «ХолодКомплект»."
 Результат:
 {{
   "entities": [
@@ -85,14 +86,18 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     {{"type": "Supplier", "name": "ХолодКомплект"}}
   ],
   "relations": [
-    {{"subject_type": "Part", "subject": "P-1042", "type": "REPLACED_BY", "object_type": "Part", "object": "P-1042B"}},
-    {{"subject_type": "Part", "subject": "P-1042", "type": "IS_A", "object_type": "Component", "object": "пусковое реле"}},
-    {{"subject_type": "Part", "subject": "P-1042B", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ХолодКомплект"}}
+    {{"subject_type": "Part", "subject": "P-1042", "type": "REPLACED_BY", "object_type": "Part",
+    "object": "P-1042B"}},
+    {{"subject_type": "Part", "subject": "P-1042", "type": "IS_A", "object_type": "Component",
+    "object": "пусковое реле"}},
+    {{"subject_type": "Part", "subject": "P-1042B", "type": "SUPPLIED_BY", "object_type": "Supplier",
+    "object": "ХолодКомплект"}}
   ]
 }}
 
 Пример 2 (руководство по модели):
-Текст: "Моноблок BZ-110 входит в линейку «Бриз». В BZ-110 установлены: компрессор – деталь P-2010, поставщик «КомпрессорМаш»."
+Текст: "Моноблок BZ-110 входит в линейку «Бриз». В BZ-110 установлены: компрессор – деталь P-2010, поставщик""" \
+f""" «КомпрессорМаш»."
 Результат:
 {{
   "entities": [
@@ -103,10 +108,14 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     {{"type": "Supplier", "name": "КомпрессорМаш"}}
   ],
   "relations": [
-    {{"subject_type": "Model", "subject": "BZ-110", "type": "BELONGS_TO", "object_type": "ProductLine", "object": "Бриз"}},
-    {{"subject_type": "Model", "subject": "BZ-110", "type": "HAS_PART", "object_type": "Part", "object": "P-2010"}},
-    {{"subject_type": "Part", "subject": "P-2010", "type": "IS_A", "object_type": "Component", "object": "компрессор"}},
-    {{"subject_type": "Part", "subject": "P-2010", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "КомпрессорМаш"}}
+    {{"subject_type": "Model", "subject": "BZ-110", "type": "BELONGS_TO", "object_type": "ProductLine",
+    "object": "Бриз"}},
+    {{"subject_type": "Model", "subject": "BZ-110", "type": "HAS_PART", "object_type": "Part",
+    "object": "P-2010"}},
+    {{"subject_type": "Part", "subject": "P-2010", "type": "IS_A", "object_type": "Component",
+    "object": "компрессор"}},
+    {{"subject_type": "Part", "subject": "P-2010", "type": "SUPPLIED_BY", "object_type": "Supplier",
+    "object": "КомпрессорМаш"}}
   ]
 }}
 
@@ -120,8 +129,10 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     {{"type": "Component", "name": "пусковое реле"}}
   ],
   "relations": [
-    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "FIXED_BY", "object_type": "Procedure", "object": "SP-104"}},
-    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "INDICATES", "object_type": "Component", "object": "пусковое реле"}}
+    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "FIXED_BY", "object_type": "Procedure",
+    "object": "SP-104"}},
+    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "INDICATES", "object_type": "Component",
+    "object": "пусковое реле"}}
   ]
 }}
 
@@ -152,11 +163,16 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3114"}},
     {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3118"}},
     {{"subject_type": "Part", "subject": "P-3110", "type": "IS_A", "object_type": "Component", "object": "компрессор"}},
-    {{"subject_type": "Part", "subject": "P-3114", "type": "IS_A", "object_type": "Component", "object": "вентилятор конденсатора"}},
-    {{"subject_type": "Part", "subject": "P-3118", "type": "IS_A", "object_type": "Component", "object": "датчик температуры"}},
-    {{"subject_type": "Part", "subject": "P-3110", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "КомпрессорМаш"}},
-    {{"subject_type": "Part", "subject": "P-3114", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ВентПром"}},
-    {{"subject_type": "Part", "subject": "P-3118", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ТермоПрибор"}}
+    {{"subject_type": "Part", "subject": "P-3114", "type": "IS_A", "object_type": "Component",
+    "object": "вентилятор конденсатора"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "IS_A", "object_type": "Component",
+    "object": "датчик температуры"}},
+    {{"subject_type": "Part", "subject": "P-3110", "type": "SUPPLIED_BY", "object_type": "Supplier",
+    "object": "КомпрессорМаш"}},
+    {{"subject_type": "Part", "subject": "P-3114", "type": "SUPPLIED_BY", "object_type": "Supplier",
+    "object": "ВентПром"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "SUPPLIED_BY", "object_type": "Supplier",
+    "object": "ТермоПрибор"}}
   ]
 }}
 """

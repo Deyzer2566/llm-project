@@ -48,13 +48,13 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
     undirected = kb.graph.to_undirected()
     
     def _node_name(node_id: str) -> str:
-        # return kb.graph.nodes[node_id].get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
-        node_data = kb.graph.nodes.get(node_id, {})
-        name = node_data.get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
-        node_type = node_data.get("type", "")
-        # ErrorCode читаем как "Error", остальные типы - как есть
-        type_label = "Error" if node_type == "ErrorCode" else node_type
-        return f"{type_label} {name}" if type_label else name
+        return kb.graph.nodes[node_id].get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
+        # node_data = kb.graph.nodes.get(node_id, {})
+        # name = node_data.get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
+        # node_type = node_data.get("type", "")
+        # # ErrorCode читаем как "Error", остальные типы - как есть
+        # type_label = "Error" if node_type == "ErrorCode" else node_type
+        # return f"{type_label} {name}" if type_label else name
 
     if len(anchor_nodes) >= 2:
         anchors_list = list(anchor_nodes)
@@ -121,7 +121,7 @@ f"""Не забудь указать, что новая деталь совме�
 Если ответа нет в фактах, напиши "в базе знаний не найдено".
 
 Факты:
-{facts_text}
+{facts_text[:8000]}
 
 Вопрос: {question}
 """
