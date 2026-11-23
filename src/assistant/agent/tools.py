@@ -30,7 +30,7 @@ TOOL_SCHEMAS: list[dict] = [
         "type": "function",
         "function": {
             "name": "summarize_topic",
-            "description": "Поиск обзорной информации по всему корпусу документов.",
+            "description": "Выполняет запрос по поиску информации по всему корпусу документов.",
             "parameters": {
                 "type": "object",
                 "properties": {"question": {"type": "string"}},

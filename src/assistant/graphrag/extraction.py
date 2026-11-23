@@ -60,7 +60,7 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
 
 Схема связей (типы концов важны!):
 - Model BELONGS_TO ProductLine (модель входит в линейку)
-- Model HAS_PART Part (в модели установлена деталь)
+- Model HAS_PART Part (в модели установлена деталь, модель состоит из..., в модели установлены следующие узлы...)
 - Part IS_A Component (деталь является узлом этого вида)
 - Part REPLACED_BY Part (старая деталь заменяется на новую)
 - Part SUPPLIED_BY Supplier (деталь поставляет поставщик)
@@ -122,6 +122,41 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
   "relations": [
     {{"subject_type": "ErrorCode", "subject": "E-17", "type": "FIXED_BY", "object_type": "Procedure", "object": "SP-104"}},
     {{"subject_type": "ErrorCode", "subject": "E-17", "type": "INDICATES", "object_type": "Component", "object": "пусковое реле"}}
+  ]
+}}
+
+Пример 4 (описание деталей модели):
+Текст: ## Состав узлов
+
+В GS-520 установлены следующие узлы.
+
+- компрессор – деталь P-3110, поставщик «КомпрессорМаш»
+- вентилятор конденсатора – деталь P-3114, поставщик «ВентПром»
+- датчик температуры – деталь P-3118, поставщик «ТермоПрибор»
+Результат:
+{{
+  "entities": [
+    {{"type": "Model", "name": "GS-520"}},
+    {{"type": "Part", "name": "P-3110"}},
+    {{"type": "Part", "name": "P-3114"}},
+    {{"type": "Part", "name": "P-3118"}},
+    {{"type": "Component", "name": "компрессор"}},
+    {{"type": "Component", "name": "вентилятор конденсатора"}},
+    {{"type": "Component", "name": "датчик температуры"}},
+    {{"type": "Supplier", "name": "КомпрессорМаш"}},
+    {{"type": "Supplier", "name": "ВентПром"}},
+    {{"type": "Supplier", "name": "ТермоПрибор"}},
+  ],
+  "relations": [
+    {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3110"}},
+    {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3114"}},
+    {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3118"}},
+    {{"subject_type": "Part", "subject": "P-3110", "type": "IS_A", "object_type": "Component", "object": "компрессор"}},
+    {{"subject_type": "Part", "subject": "P-3114", "type": "IS_A", "object_type": "Component", "object": "вентилятор конденсатора"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "IS_A", "object_type": "Component", "object": "датчик температуры"}},
+    {{"subject_type": "Part", "subject": "P-3110", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "КомпрессорМаш"}},
+    {{"subject_type": "Part", "subject": "P-3114", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ВентПром"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "SUPPLIED_BY", "object_type": "Supplier", "object": "ТермоПрибор"}}
   ]
 }}
 """
@@ -190,8 +225,17 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
         if not (s_valid and o_valid):
             dropped += 1
             continue
+        
+        subj = Entity(stype, scanon)
+        obj = Entity(otype, ocanon)
 
-        relation = Relation(Entity(stype, scanon), rel["type"], Entity(otype, ocanon))
+        # Самоссылающиеся связи (например, Part:P-1126 -HAS_PART-> Part:P-1126)
+        # в тексте не встречаются и являются ошибкой модели - отбрасываем.
+        if subj.node_id == obj.node_id:
+            dropped += 1
+            continue
+
+        relation = Relation(subj, rel["type"], obj)
         if relation.matches_schema():
             relations.append(relation)
         else:

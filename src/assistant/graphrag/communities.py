@@ -122,7 +122,8 @@ def summarize_community(community: Community, graph: nx.DiGraph, llm: LLMClient)
 
 {stats_text}
 
-Опиши, какие сущности входят в это сообщество, как они связаны и что встречается чаще всего.
+Опиши, какие сущности входят в это сообщество, как они связаны и особенности сообщества""" \
+""": что встречается чаще всего, что отказывает чаще всего. Никаких сокращений типа "и другие", "и др."
 """
     response = llm.chat([{"role": "user", "content": prompt}], max_tokens=2048)
     summary = response.content.strip()

@@ -52,7 +52,7 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
         node_data = kb.graph.nodes.get(node_id, {})
         name = node_data.get("name", node_id.split(":", 1)[-1] if ":" in node_id else node_id)
         node_type = node_data.get("type", "")
-        # ErrorCode читаем как "Error", остальные типы — как есть
+        # ErrorCode читаем как "Error", остальные типы - как есть
         type_label = "Error" if node_type == "ErrorCode" else node_type
         return f"{type_label} {name}" if type_label else name
 
@@ -116,7 +116,8 @@ def local_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
 
     facts_text = "\n".join([f"{i+1}. {f}" for i, f in enumerate(facts)])
     prompt = f"""Ответь на вопрос, используя только следующие факты из базы знаний. 
-Если в фактах есть информация о замене детали (REPLACED_BY), укажи самую новую (последнюю) деталь в цепочке замен.
+Если в фактах есть информация о замене детали (REPLACED_BY), укажи самую новую (последнюю) деталь в цепочке замен.""" \
+f"""Не забудь указать, что новая деталь совместима со старой.
 Если ответа нет в фактах, напиши "в базе знаний не найдено".
 
 Факты:
@@ -142,14 +143,22 @@ def global_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
     import json
     partial_answers = []
     for comm in kb.communities:
-        prompt = f"""Вопрос: {question}
+        prompt = f"""Ты анализируешь одно тематическое сообщество графа знаний.
 Сводка сообщества: {comm.summary}
 
-Дай краткий ответ на вопрос на основе этой сводки и оцени его полезность от 0 до 10.
+Правила:
+1. Если в сводке есть ПРЯМОЙ ответ на вопрос (факты, названия, коды), сформулируй его""" \
+f""" и поставь score от 8 до 10.
+2. Если в сводке НЕТ прямой информации по вопросу, верни score: 0 и answer: "нет информации". 
+3. НЕ пиши пространных объяснений о том, чего в сводке нет.
+4. При этом сводки не релеватны к вопросу, поэтому не опирайся на содержимое вопроса при формировании ответа.
+
 Верни строго JSON по схеме: {{"answer": "текст ответа", "score": число}}
 """
         try:
-            response = llm.chat([{"role": "user", "content": prompt}], json_schema=MAP_SCHEMA, max_tokens=300)
+            response = llm.chat([{"role": "system", "content": prompt},
+                                 {"role":"user", "content": f"Вопрос: {question}"}]
+                                 , json_schema=MAP_SCHEMA, max_tokens=300)
             data = json.loads(response.content)
             if data.get("score", 0) > 0:
                 partial_answers.append(data.get("answer", ""))
@@ -160,11 +169,21 @@ def global_search(question: str, kb: KnowledgeBase, llm: LLMClient) -> Answer:
         return Answer(text="в базе знаний не найдено", sources=[], refused=True)
         
     combined = "\n".join([f"- {ans}" for ans in partial_answers])
-    prompt = f"""Вопрос: {question}
-Частичные ответы из разных сообществ:
+    prompt = f"""Ты получаешь список частичных ответов от разных сообществ графа знаний на один и тот же вопрос.
+
+ВАЖНЫЕ ПРАВИЛА:
+1. Большинство сообществ могут не содержать ответа на этот вопрос. Это нормально.
+2. Твоя задача - выбрать релевантные ответы. Игнорируй любые ответы вида "нет информации" или "не упоминается".
+3. Если хотя бы в одном из ответов есть чёткий факт, цифра или название, считай это истиной и используй для""" \
+f""" итогового ответа.
+4. НЕ пиши "невозможно определить" или "не упоминается", если среди ответов есть хотя бы один конкретный факт.
+5. Сформируй краткий, уверенный итоговый ответ, основанный ТОЛЬКО на найденных положительных фактах.
+
+Частичные ответы:
 {combined}
 
-Сформируй итоговый связный ответ на вопрос, объединив полезную информацию из частичных ответов.
+Вопрос: {question}
+Итоговый ответ:
 """
     response = llm.chat([{"role": "user", "content": prompt}], max_tokens=500)
     return Answer(text=response.content.strip(), sources=[], refused=False)
