@@ -56,7 +56,7 @@ def extract_chunk(chunk: Chunk, llm: LLMClient) -> ExtractionResult:
     # TODO: запрос к модели, разбор JSON, проверки по тексту чанка и словарю
     # raise NotImplementedError("Реализуйте extract_chunk")
     vocab = vocabulary()
-    prompt = f"""Ты извлекаешь сущности и связи из текста чанка строго по заданной схеме.
+    prompt = (f"""Ты извлекаешь сущности и связи из текста чанка строго по заданной схеме.
 
 Схема связей (типы концов важны!):
 - Model BELONGS_TO ProductLine (модель входит в линейку)
@@ -86,12 +86,12 @@ f"""Поставщик – «ХолодКомплект»."
     {{"type": "Supplier", "name": "ХолодКомплект"}}
   ],
   "relations": [
-    {{"subject_type": "Part", "subject": "P-1042", "type": "REPLACED_BY", "object_type": "Part",
-    "object": "P-1042B"}},
-    {{"subject_type": "Part", "subject": "P-1042", "type": "IS_A", "object_type": "Component",
-    "object": "пусковое реле"}},
-    {{"subject_type": "Part", "subject": "P-1042B", "type": "SUPPLIED_BY", "object_type": "Supplier",
-    "object": "ХолодКомплект"}}
+    {{"subject_type": "Part", "subject": "P-1042", "type": "REPLACED_BY", "object_type": "Part","""
+f""" "object": "P-1042B"}},
+    {{"subject_type": "Part", "subject": "P-1042", "type": "IS_A", "object_type": "Component","""
+f""" "object": "пусковое реле"}},
+    {{"subject_type": "Part", "subject": "P-1042B", "type": "SUPPLIED_BY", "object_type": "Supplier","""
+f""" "object": "ХолодКомплект"}}
   ]
 }}
 
@@ -108,14 +108,14 @@ f""" «КомпрессорМаш»."
     {{"type": "Supplier", "name": "КомпрессорМаш"}}
   ],
   "relations": [
-    {{"subject_type": "Model", "subject": "BZ-110", "type": "BELONGS_TO", "object_type": "ProductLine",
-    "object": "Бриз"}},
-    {{"subject_type": "Model", "subject": "BZ-110", "type": "HAS_PART", "object_type": "Part",
-    "object": "P-2010"}},
-    {{"subject_type": "Part", "subject": "P-2010", "type": "IS_A", "object_type": "Component",
-    "object": "компрессор"}},
-    {{"subject_type": "Part", "subject": "P-2010", "type": "SUPPLIED_BY", "object_type": "Supplier",
-    "object": "КомпрессорМаш"}}
+    {{"subject_type": "Model", "subject": "BZ-110", "type": "BELONGS_TO", "object_type": "ProductLine","""
+f""" "object": "Бриз"}},
+    {{"subject_type": "Model", "subject": "BZ-110", "type": "HAS_PART", "object_type": "Part","""
+f""" "object": "P-2010"}},
+    {{"subject_type": "Part", "subject": "P-2010", "type": "IS_A", "object_type": "Component","""
+f""" "object": "компрессор"}},
+    {{"subject_type": "Part", "subject": "P-2010", "type": "SUPPLIED_BY", "object_type": "Supplier","""
+f""" "object": "КомпрессорМаш"}}
   ]
 }}
 
@@ -129,10 +129,10 @@ f""" «КомпрессорМаш»."
     {{"type": "Component", "name": "пусковое реле"}}
   ],
   "relations": [
-    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "FIXED_BY", "object_type": "Procedure",
-    "object": "SP-104"}},
-    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "INDICATES", "object_type": "Component",
-    "object": "пусковое реле"}}
+    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "FIXED_BY", "object_type": "Procedure","""
+f""" "object": "SP-104"}},
+    {{"subject_type": "ErrorCode", "subject": "E-17", "type": "INDICATES", "object_type": "Component","""
+f""" "object": "пусковое реле"}}
   ]
 }}
 
@@ -163,19 +163,19 @@ f""" «КомпрессорМаш»."
     {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3114"}},
     {{"subject_type": "Model", "subject": "GS-520", "type": "HAS_PART", "object_type": "Part", "object": "P-3118"}},
     {{"subject_type": "Part", "subject": "P-3110", "type": "IS_A", "object_type": "Component", "object": "компрессор"}},
-    {{"subject_type": "Part", "subject": "P-3114", "type": "IS_A", "object_type": "Component",
-    "object": "вентилятор конденсатора"}},
-    {{"subject_type": "Part", "subject": "P-3118", "type": "IS_A", "object_type": "Component",
-    "object": "датчик температуры"}},
-    {{"subject_type": "Part", "subject": "P-3110", "type": "SUPPLIED_BY", "object_type": "Supplier",
-    "object": "КомпрессорМаш"}},
-    {{"subject_type": "Part", "subject": "P-3114", "type": "SUPPLIED_BY", "object_type": "Supplier",
-    "object": "ВентПром"}},
-    {{"subject_type": "Part", "subject": "P-3118", "type": "SUPPLIED_BY", "object_type": "Supplier",
-    "object": "ТермоПрибор"}}
+    {{"subject_type": "Part", "subject": "P-3114", "type": "IS_A", "object_type": "Component","""
+f""" "object": "вентилятор конденсатора"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "IS_A", "object_type": "Component","""
+f""" "object": "датчик температуры"}},
+    {{"subject_type": "Part", "subject": "P-3110", "type": "SUPPLIED_BY", "object_type": "Supplier","""
+f""" "object": "КомпрессорМаш"}},
+    {{"subject_type": "Part", "subject": "P-3114", "type": "SUPPLIED_BY", "object_type": "Supplier","""
+f""" "object": "ВентПром"}},
+    {{"subject_type": "Part", "subject": "P-3118", "type": "SUPPLIED_BY", "object_type": "Supplier","""
+f""" "object": "ТермоПрибор"}}
   ]
 }}
-"""
+""")
     messages = [{"role": "system", "content": prompt}, {'role':'user', 'content': f"Текст чанка:\n{chunk.text}"}]
     data = None
 

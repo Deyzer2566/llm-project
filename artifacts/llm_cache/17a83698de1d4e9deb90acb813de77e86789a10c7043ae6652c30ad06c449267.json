@@ -1,0 +1,1 @@
+{"id": "chatcmpl-106", "object": "chat.completion", "created": 1795296217, "model": "qwen3:4b-instruct-2507-q4_K_M", "system_fingerprint": "fp_ollama", "choices": [{"index": 0, "message": {"role": "assistant", "content": "Деталь P-9999 не найдена в базе знаний."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 870, "completion_tokens": 20, "total_tokens": 890}}

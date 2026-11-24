@@ -1,0 +1,1 @@
+{"id": "chatcmpl-943", "object": "chat.completion", "created": 1795430210, "model": "qwen3:4b-instruct-2507-q4_K_M", "system_fingerprint": "fp_ollama", "choices": [{"index": 0, "message": {"role": "assistant", "content": "Модель BZ-210 BELONGS_TO ProductLine Бриз."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 2703, "completion_tokens": 20, "total_tokens": 2723}}
